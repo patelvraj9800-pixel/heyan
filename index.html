@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SMART TIMETABLE 2040 ULTRA AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:'Segoe UI',sans-serif;
+    background:linear-gradient(-45deg,#0f2027,#203a43,#2c5364,#6a11cb);
+    background-size:400% 400%;
+    animation:bgMove 12s ease infinite;
+    color:white;
+}
+@keyframes bgMove{
+    0%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+    100%{background-position:0% 50%;}
+}
+header{
+    text-align:center;
+    padding:20px;
+    font-size:26px;
+}
+.container{
+    margin:20px;
+    padding:20px;
+    backdrop-filter:blur(15px);
+    background:rgba(255,255,255,0.08);
+    border-radius:20px;
+    overflow-x:auto;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:800px;
+}
+th,td{
+    border:1px solid rgba(255,255,255,0.2);
+    padding:8px;
+    text-align:center;
+}
+input[type="text"]{
+    width:90%;
+    background:transparent;
+    border:none;
+    color:white;
+    text-align:center;
+}
+button{
+    padding:8px 15px;
+    margin:5px;
+    border:none;
+    border-radius:20px;
+    cursor:pointer;
+    font-weight:bold;
+    background:linear-gradient(45deg,cyan,purple);
+    color:white;
+}
+.progress-bar{
+    height:20px;
+    width:0%;
+    background:linear-gradient(90deg,cyan,purple);
+    border-radius:20px;
+    text-align:center;
+}
+.calendar-day{
+    display:inline-block;
+    width:13%;
+    padding:8px;
+    margin:2px;
+    background:rgba(255,255,255,0.1);
+    text-align:center;
+    border-radius:10px;
+    cursor:pointer;
+}
+.streak{
+    font-size:18px;
+    text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+🚀 SMART TIMETABLE 2040 ULTRA AI
+<div id="clock"></div>
+</header>
+
+<div style="text-align:center;">
+<button onclick="resetAll()">🔄 Reset</button>
+<button onclick="simulateSync()">🌐 Sync</button>
+</div>
+
+<div class="container">
+<h3>📅 Weekly Timetable</h3>
+<table id="timetable">
+<tr>
+<th>Day</th>
+<th>9-10</th>
+<th>10-11</th>
+<th>11-12</th>
+<th>1-2</th>
+<th>2-3</th>
+</tr>
+</table>
+</div>
+
+<div class="container">
+<h3>🔥 AI Study Suggestion</h3>
+<div id="aiSuggestion">Analyzing your tasks...</div>
+</div>
+
+<div class="container">
+<h3>📊 Subject Analytics</h3>
+<canvas id="analyticsChart"></canvas>
+</div>
+
+<div class="container">
+<h3>📅 Monthly Calendar</h3>
+<div id="calendar"></div>
+</div>
+
+<div class="container">
+<h3>🎯 Study Streak</h3>
+<div class="streak" id="streakDisplay">0 Days</div>
+</div>
+
+<script>
+const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const table=document.getElementById("timetable");
+const today=new Date().getDay();
+
+/* Build Table */
+for(let d=0; d<7; d++){
+    const row=document.createElement("tr");
+    const dayCell=document.createElement("td");
+    dayCell.textContent=days[d];
+    row.appendChild(dayCell);
+
+    for(let h=0; h<5; h++){
+        const cell=document.createElement("td");
+
+        const input=document.createElement("input");
+        input.type="text";
+        input.dataset.index=d+"-"+h;
+        input.oninput=saveData;
+
+        const check=document.createElement("input");
+        check.type="checkbox";
+        check.dataset.index=d+"-"+h;
+        check.onchange=updateAll;
+
+        cell.appendChild(input);
+        cell.appendChild(document.createElement("br"));
+        cell.appendChild(check);
+        row.appendChild(cell);
+    }
+    table.appendChild(row);
+}
+
+/* Save & Load */
+function saveData(){
+    document.querySelectorAll("input[type='text']").forEach(i=>{
+        localStorage.setItem("task-"+i.dataset.index,i.value);
+    });
+}
+
+function loadData(){
+    document.querySelectorAll("input[type='text']").forEach(i=>{
+        i.value=localStorage.getItem("task-"+i.dataset.index)||"";
+    });
+    document.querySelectorAll("input[type='checkbox']").forEach(c=>{
+        c.checked=localStorage.getItem("check-"+c.dataset.index)==="true";
+    });
+}
+
+/* AI Suggestion */
+function generateAI(){
+    let tasks=[...document.querySelectorAll("input[type='text']")]
+        .map(i=>i.value.toLowerCase());
+
+    let suggestion="Keep pushing! 🚀";
+
+    if(tasks.some(t=>t.includes("math")))
+        suggestion="Focus extra time on Math practice today 📐";
+    else if(tasks.some(t=>t.includes("science")))
+        suggestion="Revise key Science concepts 🧪";
+    else if(tasks.every(t=>t===""))
+        suggestion="Plan your week! Add study tasks 📚";
+
+    document.getElementById("aiSuggestion").innerHTML=suggestion;
+}
+
+/* Analytics */
+function buildChart(){
+    let subjects={};
+
+    document.querySelectorAll("input[type='text']").forEach(i=>{
+        let val=i.value;
+        if(val){
+            subjects[val]=(subjects[val]||0)+1;
+        }
+    });
+
+    const ctx=document.getElementById("analyticsChart");
+    new Chart(ctx,{
+        type:"bar",
+        data:{
+            labels:Object.keys(subjects),
+            datasets:[{
+                label:"Tasks Count",
+                data:Object.values(subjects)
+            }]
+        }
+    });
+}
+
+/* Calendar */
+function buildCalendar(){
+    const cal=document.getElementById("calendar");
+    cal.innerHTML="";
+    for(let i=1;i<=30;i++){
+        const d=document.createElement("div");
+        d.className="calendar-day";
+        d.innerText=i;
+        cal.appendChild(d);
+    }
+}
+
+/* Study Streak */
+function updateStreak(){
+    let todayKey="streak-"+new Date().toDateString();
+    if(!localStorage.getItem(todayKey)){
+        localStorage.setItem(todayKey,"done");
+    }
+    let streak=Object.keys(localStorage)
+        .filter(k=>k.startsWith("streak-")).length;
+    document.getElementById("streakDisplay").innerText=streak+" Days";
+}
+
+/* Reminder */
+setInterval(()=>{
+    if(new Date().getMinutes()===0){
+        alert("⏰ New Hour! Time to study!");
+    }
+},60000);
+
+/* Sync Simulation */
+function simulateSync(){
+    alert("🌐 Syncing with Cloud...");
+    setTimeout(()=>{
+        alert("✅ Sync Complete!");
+    },1500);
+}
+
+/* Update All */
+function updateAll(){
+    document.querySelectorAll("input[type='checkbox']").forEach(c=>{
+        localStorage.setItem("check-"+c.dataset.index,c.checked);
+    });
+    generateAI();
+}
+
+/* Reset */
+function resetAll(){
+    if(confirm("Reset everything?")){
+        localStorage.clear();
+        location.reload();
+    }
+}
+
+/* Clock */
+function updateClock(){
+    document.getElementById("clock").innerHTML=
+    new Date().toLocaleTimeString();
+}
+setInterval(updateClock,1000);
+
+loadData();
+buildCalendar();
+generateAI();
+buildChart();
+updateStreak();
+</script>
+
+</body>
+</html>
